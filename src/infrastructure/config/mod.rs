@@ -1,4 +1,5 @@
 use std::env;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Context as _;
 use tracing_subscriber::EnvFilter;
@@ -10,9 +11,19 @@ pub struct AppConfig {
     pub dev_mode: bool,
 }
 
+static DEV_MODE: AtomicBool = AtomicBool::new(false);
+
+pub fn set_dev_mode(enabled: bool) {
+    DEV_MODE.store(enabled, Ordering::Relaxed);
+}
+
+fn dev_mode() -> bool {
+    DEV_MODE.load(Ordering::Relaxed)
+}
+
 impl AppConfig {
     pub fn load() -> anyhow::Result<Self> {
-        let dev_mode = dev_mode_enabled();
+        let dev_mode = dev_mode();
         let env_filter = build_env_filter(dev_mode);
         let discord_bot_token =
             env::var("DISCORD_BOT_TOKEN").context("DISCORD_BOT_TOKEN is not set")?;
@@ -22,16 +33,6 @@ impl AppConfig {
             dev_mode,
         })
     }
-}
-
-fn dev_mode_enabled() -> bool {
-    let Ok(value) = env::var("DEV_MODE") else {
-        return false;
-    };
-    matches!(
-        value.trim().to_ascii_lowercase().as_str(),
-        "1" | "true" | "yes" | "on"
-    )
 }
 
 fn build_env_filter(dev_mode: bool) -> EnvFilter {
@@ -57,47 +58,6 @@ fn default_env_filter(dev_mode: bool) -> EnvFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_dev_mode_enabled_with_true_values() {
-        for value in [
-            "1", "true", "True", "TRUE", "yes", "Yes", "YES", "on", "On", "ON",
-        ] {
-            env::set_var("DEV_MODE", value);
-            assert!(
-                dev_mode_enabled(),
-                "expected DEV_MODE={} to enable dev mode",
-                value
-            );
-        }
-        env::remove_var("DEV_MODE");
-    }
-
-    #[test]
-    fn test_dev_mode_disabled_with_other_values() {
-        for value in ["0", "false", "no", "off", "invalid"] {
-            env::set_var("DEV_MODE", value);
-            assert!(
-                !dev_mode_enabled(),
-                "expected DEV_MODE={} to disable dev mode",
-                value
-            );
-        }
-        env::remove_var("DEV_MODE");
-    }
-
-    #[test]
-    fn test_dev_mode_disabled_when_not_set() {
-        env::remove_var("DEV_MODE");
-        assert!(!dev_mode_enabled());
-    }
-
-    #[test]
-    fn test_dev_mode_with_whitespace() {
-        env::set_var("DEV_MODE", "  true  ");
-        assert!(dev_mode_enabled());
-        env::remove_var("DEV_MODE");
-    }
 
     #[test]
     fn test_default_env_filter_dev_mode() {
