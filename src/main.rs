@@ -39,8 +39,8 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn is_cargo_run() -> bool {
-    std::env::var("CARGO").is_ok() && std::env::var("CARGO_BIN_NAME").is_ok()
-}
-
-
+    if std::env::var("CARGO").is_ok() && std::env::var("CARGO_BIN_NAME").is_ok() {
+        return true;
+    }
+    false
 }
