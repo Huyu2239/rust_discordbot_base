@@ -1,12 +1,13 @@
 use anyhow::Context as _;
 use serenity::prelude::*;
 
-use sample_discord_bot::infrastructure::config::AppConfig;
+use sample_discord_bot::infrastructure::config::{set_dev_mode, AppConfig};
 use sample_discord_bot::presentation::build_framework;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
+    set_dev_mode(is_cargo_run());
     let config = AppConfig::load()?;
     let AppConfig {
         discord_bot_token,
@@ -35,4 +36,8 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn is_cargo_run() -> bool {
+    std::env::var("CARGO").is_ok() && std::env::var("CARGO_BIN_NAME").is_ok()
 }
