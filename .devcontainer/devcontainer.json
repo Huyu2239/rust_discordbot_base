@@ -1,6 +1,6 @@
 {
   "name": "rust-discordbot-base",
-  "image": "mcr.microsoft.com/devcontainers/rust:latest",
+  "image": "mcr.microsoft.com/devcontainers/rust:2-trixie",
   "features": {
     "ghcr.io/devcontainers/features/rust:1": {
       "profile": "minimal",
@@ -9,7 +9,11 @@
     "ghcr.io/devcontainers/features/direnv:1": {}
   },
   "mounts": [
-    "source=${localEnv:SSH_AUTH_SOCK},target=/ssh-agent,type=bind"
+    {
+      "source": "${localEnv:SSH_AUTH_SOCK:${localEnv:HOME}/.ssh/agent.sock}",
+      "target": "/ssh-agent",
+      "type": "bind"
+    }
   ],
   "containerEnv": {
     "SSH_AUTH_SOCK": "/ssh-agent"
@@ -27,5 +31,5 @@
       }
     }
   },
-  "postCreateCommand": "rustup component add clippy rustfmt && cargo install cargo-watch && git config --global --add safe.directory ${containerWorkspaceFolder} && if [ -f .envrc ]; then direnv allow .; fi && cargo build"
+  "postCreateCommand": "bash -c 'rustup component add clippy rustfmt && cargo install cargo-watch && git config --global --add safe.directory ${containerWorkspaceFolder} && ([ -f .envrc ] && direnv allow . || true) && cargo build'"
 }
